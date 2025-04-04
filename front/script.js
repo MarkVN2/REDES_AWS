@@ -1,4 +1,4 @@
-const apiUrl = 'http://localhost:3200';
+const apiUrl = 'http://bananabread.ddns.net:3200';
 let movieList = document.getElementById('movie-list');
 let movieForm = document.getElementById('movie-form');
 let submitMovie = document.getElementById('submit-new-movie');
