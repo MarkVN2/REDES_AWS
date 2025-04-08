@@ -23,22 +23,26 @@ Clique em Launch Instance
 Acesse o terminal
 No terminal acesse a pasta que está sua "chave.pem"
 Digite o comando: ssh -i "chave.pem" ubuntu@<ip-público-da-instância>
+<br>
 **Instale o MYSQL**
 No temimal digite o comando: sudo apt update
 sudo apt install mysql-server -y
 Verifique se o banco está rodando, utilizando o comando: sudo systemctl status mysql
+<br>
 **Configurar o banco**
 No Terminal, acesse o MySQL, digitando o comando: sudo mysql
+<br>
 **Crie um banco e um usuário**
 CREATE DATABASE (nome Banco);
 CREATE USER 'user1'@'%' IDENTIFIED BY 'senha123';
 GRANT ALL PRIVILEGES ON reembolso.* TO 'user1'@'%';
 FLUSH PRIVILEGES;
 EXIT;
+<br>
 **Libere o acesso Interno:**
 No terminal: sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
 Encontre a Linha: bind-address = 127.0.0.1 altere para: bind-address = 0.0.0.0
-Reinicie o serviço: sudo systemctl restart mysql
+Reinicie o serviço: sudo systemctl restart mysql<br>
 
 
 
