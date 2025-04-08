@@ -1,4 +1,7 @@
 const apiUrl = 'http://bananabread.ddns.net:3200';
+const ip = window.location.hostname;
+let pageTitle = document.getElementById('pageTitle');
+pageTitle.innerHTML = `Movie Reviews - #${ip}`;
 let movieList = document.getElementById('movie-list');
 let movieForm = document.getElementById('movie-form');
 let submitMovie = document.getElementById('submit-new-movie');
