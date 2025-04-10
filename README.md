@@ -2,6 +2,73 @@
 
 ## TOPOLOGIA DE REDE
 <img src="https://github.com/user-attachments/assets/ed47c479-eebd-48dd-99c8-a73b0a6a1f6b"></img>
+## Pré requisitos:
+* Uma Instância para o load balancer
+* Uma Instância para o back-end com a porta 3200 aberta, e com docker instalado
+* Uma ou mais instâncias para o front-end com a porta 8080 aberta, e com docker instalado
+* Uma Instância para o banco de dados
+---
+Caso não tenha docker instalado (é necessário sair e entrar novamente, após rodar os comandos):
+```
+sudo apt update
+sudo curl -fsSL https://get.docker.com/ | sh
+sudo usermod -aG docker $USER
+```
+
+## Back-End
+Assim que estiver conectado a sua instância, siga estes passos para criar seu container do backend:
+1. Crie uma pasta e arquivo para as configurações de ambiente (exemplo do arquivo abaixo)
+```
+mkdir dev
+cd dev
+nano .env
+```
+```
+PORT=3200
+DB_NAME=your_db_name_here
+DB_USER=your_user
+DB_PASSWORD=your_password
+DB_HOST=your_host
+DB_DIALECT=mysql
+```
+2. Retorne ao diretório original, e crie o container no docker, com o volume compartilhando a .env com o container
+```
+docker run -d -p 3200:3200 -v $(pwd)/dev/.env:/app/.env nininhosam/redes-aws-api
+```
+
+## Front-End
+Assim que estiver conectado a sua instância, siga estes passos para criar seu container do frontend:
+1. Crie uma pasta para as configurações do projeto 
+```
+mkdir front
+cd front
+```
+
+2. Crie um arquivo instance.txt com um id qualquer que dará para o container (para ilustrar a funcionalidade do loadbalancer)
+```
+echo "1" > instance.txt
+```
+
+4. Crie seu arquivo docker compose igual ao exemplo
+```
+nano docker-compose.yml
+```
+```yml
+services:
+  frontend:
+    image: nininhosam/redes-aws:latest
+    container_name: frontend
+    ports:
+      - "8080:80"
+    volumes:
+      - ./instance.txt:/usr/share/nginx/html/instance.txt
+    restart: unless-stopped
+```
+5. Crie e Inicie o container
+```
+docker compose up -d
+```
+
 
 ## CRIAÇÃO DO BANCO <br>
 **Criar a instância EC2**<br>
