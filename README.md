@@ -38,13 +38,13 @@ EXIT; <br>
 No terminal: sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf <br>
 Encontre a Linha: bind-address = 127.0.0.1 altere para: bind-address = 0.0.0.0 <br>
 Reinicie o serviço: sudo systemctl restart mysql <br> 
-**Para Acessar o Banco**
-No terminal: sudo systemctl start mysql
-Verifique o status do banco: sudo systemctl status mysql
-Entre no banco: sudo mysql
-SHOW DATABASES;
-use NOME_DO_BANCO;
-SELECT * FROM NOME_DA_TABLE;
+**Para Acessar o Banco**<br>
+No terminal: sudo systemctl start mysql<br>
+Verifique o status do banco: sudo systemctl status mysql<br>
+Entre no banco: sudo mysql<br>
+SHOW DATABASES;<br>
+use NOME_DO_BANCO;<br>
+SELECT * FROM NOME_DA_TABLE;<br>
 
 
 
