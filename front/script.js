@@ -1,7 +1,4 @@
 const apiUrl = 'http://bananabread.ddns.net:3200';
-const ip = window.location.hostname;
-let pageTitle = document.getElementById('pageTitle');
-pageTitle.innerHTML = `Movie Reviews - #${ip}`;
 let movieList = document.getElementById('movie-list');
 let movieForm = document.getElementById('movie-form');
 let submitMovie = document.getElementById('submit-new-movie');
@@ -85,6 +82,12 @@ const deleteMovie = (movieId) => {
 };
 getMovies();
 
+fetch('instance.txt')
+  .then(response => response.text())
+  .then(instanceId => {
+    const pageTitle = document.getElementById('pageTitle');
+    pageTitle.innerHTML = `Movie Reviews - #${instanceId.trim()}`;
+  });
 movieForm.addEventListener('submit', (e) => {
     e.preventDefault();
     let title = document.getElementById('form-title');

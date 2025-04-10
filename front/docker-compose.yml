@@ -4,4 +4,6 @@ services:
     container_name: frontend
     ports:
       - "8080:80"
+    volumes:
+      - ./instance.txt:/usr/share/nginx/html/instance.txt
     restart: unless-stopped
