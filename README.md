@@ -3,6 +3,10 @@
 ## TOPOLOGIA DE REDE
 <img src="https://github.com/user-attachments/assets/ed47c479-eebd-48dd-99c8-a73b0a6a1f6b"></img>
 ## Pré requisitos:
+
+> [!IMPORTANT]
+> Todas as instancias devem ter como sistema operacional LINUX
+
 * Uma Instância para o load balancer
 * Uma Instância para o back-end com a porta 3200 aberta, e com docker instalado
 * Uma ou mais instâncias para o front-end com a porta 8080 aberta, e com docker instalado
@@ -18,7 +22,7 @@ sudo usermod -aG docker $USER
 ## Back-End
 Assim que estiver conectado a sua instância, siga estes passos para criar seu container do backend:
 1. Crie uma pasta e arquivo para as configurações de ambiente (exemplo do arquivo abaixo)
-```
+```sh
 mkdir dev
 cd dev
 nano .env
@@ -65,7 +69,7 @@ services:
     restart: unless-stopped
 ```
 5. Crie e Inicie o container
-```
+```sh
 docker compose up -d
 ```
 
@@ -113,7 +117,146 @@ SHOW DATABASES;<br>
 use NOME_DO_BANCO;<br>
 SELECT * FROM NOME_DA_TABLE;<br>
 
+## Load-Balancer e bloqueio de IP's 
 
+Após a conexão com a instancia do Load-Balancer instale Nginx, usando o guia presente nesse [link](https://nginx.org/en/linux_packages.html).
+Para verificar a instalação com sucesso do Nginx utilize o seguinte comando:
+```sh
+sudo nginx -v 
+```
+O comando mostrará a versão do Nginx instalado na maquina, caso ele não funcione verifique novamente sua instalação.
+
+Após uma instalação com sucesso vá até o diretorio de configuração, na distro do Ubuntu essa pasta se localiza em ```/etc/nginx```.
+Agora modifique as configurações do Nginx :
+```sh
+vim nginx.conf # ou nano
+```
+O arquivo aberto será semelhar a esse em estrutura
+```gdscript
+user  nginx;
+worker_processes  auto;
+
+error_log  /var/log/nginx/error.log notice;
+pid        /var/run/nginx.pid;
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile        on;
+    #tcp_nopush     on;
+
+    keepalive_timeout  65;
+
+    #gzip  on;
+
+    include /etc/nginx/conf.d/*.conf;
+
+}
+```
+
+Nesse arquivo em http adicionaremos o seguinte , lembrando de modificar as variaveis IP_MAQUINA_X e as seguintes pelo ip público das suas maquinas do front-end:
+```sh
+upstream front_end {
+  least_conn;
+  server IP_MAQUINA_X:8080;
+  server IP_MAQUINA_Y:8080;
+  server IP_MAQUINA_Z:8080;
+}
+```
+
+O proximo passo é  adicionar em http o seguinte modificando IP_DOMINIO com o seu dominio, caso não tenha coloque o ip público da maquina do load-balancer : 
+```sh
+    server {
+         listen 80;
+         server_name IP_DOMINIO;
+         location / {
+          proxy_pass http://front_end;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto  $scheme;
+         }
+    }
+
+```
+Após isso bloqueie acesso adicionando dentro de location e trocando IP_PERMITIDO pelo intervalo de IP ou IP permitido acesso a rota / do seu load-balancer 
+```sh
+  location / {
+        allow IP_PERMITIDO;
+        deny all;
+   }
+```
+
+O arquivo final ficará similar a esse:
+```
+user  nginx;
+worker_processes  auto;
+
+error_log  /var/log/nginx/error.log notice;
+pid        /var/run/nginx.pid;
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile        on;
+    #tcp_nopush     on;
+
+    keepalive_timeout  65;
+
+    #gzip  on;
+
+    include /etc/nginx/conf.d/*.conf;
+    upstream front_end {
+      least_conn;
+      server IP_MAQUINA_X:8080;
+      server IP_MAQUINA_Y:8080;
+      server IP_MAQUINA_Z:8080;
+    }
+    server {
+         listen 80;
+         server_name IP_DOMINIO;
+         location / {
+          allow IP_PERMITIDO;
+          deny all;
+          proxy_pass http://front_end;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto  $scheme;
+         }
+    }
+
+}
+```
+Após essa configuração reinicie o nginx 
+```sh
+sudo systemctl restart nginx
+```
+e acesse o ip da máquina do load-balancer.
 
 
 
