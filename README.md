@@ -10,7 +10,7 @@
 * Uma Instância para o load balancer
 * Uma Instância para o back-end com a porta 3200 aberta, e com docker instalado
 * Uma ou mais instâncias para o front-end com a porta 8080 aberta, e com docker instalado
-* Uma Instância para o banco de dados
+* Uma Instância para o banco de dados com a porta 3306 aberta
 ---
 Caso não tenha docker instalado (é necessário sair e entrar novamente, após rodar os comandos):
 ```
@@ -74,48 +74,71 @@ docker compose up -d
 ```
 
 
-## CRIAÇÃO DO BANCO <br>
-**Criar a instância EC2**<br>
-Acesse o AWS Console. <br>
-Clique em EC2 > Launch Instance. <br>
-Name: banco (Nome que você preferir) <br>
-AMI: Escolhe Ubuntu Server 22.04 <br>
-Instance Type: t2.micro <br>
-Key Pair (login): Crie uma nova (baixe o .pem) <br>
-Configurações de Rede: <br>
-Permitir tráfego SSH (porta 22) <br>
-Adicione uma regra para liberar a porta do banco (3306 p/ MySQL) <br>
-Tipo: "Custom TCP" <br>
-Porta: 3306 <br>
-Source: 0.0.0.0/0 <br>
-Clique em Launch Instance <br>
-**Acessar a EC2 via Terminal** <br>
-Acesse o terminal <br>
-No terminal acesse a pasta que está sua "chave.pem" <br>
-Digite o comando: ssh -i "chave.pem" ubuntu@<ip-público-da-instância> <br>
-**Instale o MYSQL** <br>
-No temimal digite o comando: sudo apt update <br>
-sudo apt install mysql-server -y <br>
-Verifique se o banco está rodando, utilizando o comando: sudo systemctl status mysql <br>
-**Configurar o banco** <br>
-No Terminal, acesse o MySQL, digitando o comando: sudo mysql <br>
-**Crie um banco e um usuário** <br>
-CREATE DATABASE (nome Banco); <br>
-CREATE USER 'user1'@'%' IDENTIFIED BY 'senha123'; <br>
-GRANT ALL PRIVILEGES ON reembolso.* TO 'user1'@'%'; <br>
-FLUSH PRIVILEGES; <br>
-EXIT; <br>
-**Libere o acesso Interno:** <br>
-No terminal: sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf <br>
-Encontre a Linha: bind-address = 127.0.0.1 altere para: bind-address = 0.0.0.0 <br>
-Reinicie o serviço: sudo systemctl restart mysql <br> 
-**Para Acessar o Banco**<br>
-No terminal: sudo systemctl start mysql<br>
-Verifique o status do banco: sudo systemctl status mysql<br>
-Entre no banco: sudo mysql<br>
-SHOW DATABASES;<br>
-use NOME_DO_BANCO;<br>
-SELECT * FROM NOME_DA_TABLE;<br>
+## Banco de dados
+1. Instale o MySQL
+    1. Instale o pacote
+    ```
+    sudo apt update
+    sudo apt install mysql-server -y
+    ```
+
+    2. Verifique se o banco está rodando 
+    ```
+    sudo systemctl status mysql
+    ```
+
+2. Configure o MySQL:
+    1. Acesse o MySQL
+    ```
+    sudo mysql
+    ```
+
+    2. Crie o banco e usuário
+	```sql
+	CREATE DATABASE NOME_DO_BANCO;
+	CREATE USER 'user1'@'%' IDENTIFIED BY 'senha123';
+	GRANT ALL PRIVILEGES ON reembolso.* TO 'user1'@'%';
+	FLUSH PRIVILEGES;
+	EXIT;
+	```
+
+3. Libere o acesso Interno:
+    1. Entre no arquivo de configuração do MySQL
+    ```
+    sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
+    ```
+
+	2. Encontre a Linha `bind-address = 127.0.0.1` e altere para `bind-address = 0.0.0.0`
+
+    3. Reinicie o serviço
+	```
+	sudo systemctl restart mysql
+	```
+
+<br><br>
+
+* Para Acessar o Banco posteriormente:
+	1. Iniciar o MySQL
+	```
+	sudo systemctl start mysql
+	```
+
+	2. Verifique o status do banco (opcional) 
+	```
+	sudo systemctl status mysql
+	```
+
+	3. Acesse o MySQL
+	```
+	sudo mysql
+	```
+
+	4. Rode os comandos que quiser (ex)
+	```sql
+	SHOW DATABASES;
+	USE NOME_DO_BANCO;
+	SELECT * FROM NOME_DA_TABLE;
+	```
 
 ## Load-Balancer e bloqueio de IP's 
 
