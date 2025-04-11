@@ -97,7 +97,7 @@ docker compose up -d
 	```sql
 	CREATE DATABASE NOME_DO_BANCO;
 	CREATE USER 'user1'@'%' IDENTIFIED BY 'senha123';
-	GRANT ALL PRIVILEGES ON reembolso.* TO 'user1'@'%';
+	GRANT ALL PRIVILEGES ON NOME_DO_BANCO.* TO 'user1'@'%';
 	FLUSH PRIVILEGES;
 	EXIT;
 	```
