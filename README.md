@@ -281,9 +281,164 @@ sudo systemctl restart nginx
 ```
 e acesse o ip da máquina do load-balancer.
 
+## VPN
 
+Utilizando a instancia do Load-Balancer instale OpenVPN e easy-rsa seguindo a documentação presente [aqui](https://openvpn.net/community-resources/how-to/#openvpn-quickstart). Também libere a porta 1194/UDP nas configurações da AWS.
 
+Após a instalação crie a pasta do easy-rsa para salvar as chaves e certificados
 
+```sh
+make-cadir ~/easy-rsa
+cd ~/easy-rsa
+```
 
+Dentro da pasta inicie o PKI e crie a CA ( Autoridade Certificadora ), siga os prompts e criei uma senha
 
+```sh
+./easyrsa init-pki
+./easyrsa build-ca
+```
 
+Agora gere as chaves e o certificados para o servidor
+
+```sh
+./easyrsa gen-req server nopass
+./easyrsa sign-req server server
+./easyrsa gen-dh
+openvpn --genkey --secret ta.key
+```
+
+Copie as chaves e mova-as para o diretorio do OpenVPN
+
+```sh
+sudo cp pki/ca.crt pki/issued/server.crt pki/private/server.key pki/dh.pem ta.key /etc/openvpn/
+```
+
+Edite o arquivo server.conf dentro do diretorio do OpenVPN
+
+```sh
+sudo vim /etc/openvpn/server.conf
+```
+
+O arquivo deve ser similar a esse
+
+```sh
+port 1194
+proto udp
+dev tun
+
+ca ca.crt
+cert server.crt
+key server.key
+dh dh.pem
+
+auth SHA256
+tls-auth ta.key 0
+
+topology subnet
+server 10.8.0.0 255.255.255.0
+ifconfig-pool-persist ipp.txt
+
+push "redirect-gateway def1 bypass-dhcp"
+push "dhcp-option DNS 1.1.1.1"
+
+keepalive 10 120
+cipher AES-256-CBC
+
+persist-key
+persist-tun
+status openvpn-status.log
+log-append /var/log/openvpn.log
+verb 3
+explicit-exit-notify 1
+```
+
+em `server 10.8.0.0 255.255.255.0` se define o intervalo de ips dados para uso dos clientes conectados no VPN sendo o primeiro valor o endereço da rede VPN e o segundo a mascara de sub-rede dada a esse endereço modifique ela para mudar o intervalo de rede dado aos usuários.
+
+Após modificar o arquivo de acordo com seu interesse habilite o encaminhamento de IP.
+
+Entre no arquivo de sysctl
+
+```sh
+sudo vim /etc/sysctl.conf
+```
+
+Adicione ou modifique a seguinte variavel
+
+```
+net.ipv4.ip_forward = 1
+```
+
+Depois de modificar rode o comando
+
+```sh
+sudo sysctl -p
+```
+
+Agora modifique a regras do iptablesm, substitua `eth0` pela interface correta.
+
+```sh
+sudo iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o eth0 -j MASQUERADE
+```
+
+Para tornar as configurações permanentes instale `iptables-persistent`
+
+```sh
+sudo apt install iptables-persistent
+```
+
+e use o seguinte comando
+
+```sh
+sudo netfilter-persistent save
+```
+
+Agora com tudo configurado inicie o serviço e verifique seu status
+
+```sh
+sudo systemctl enable openvpn@server
+sudo systemctl start openvpn@server
+sudo systemctl status openvpn@server
+```
+
+Para acesso dos clientes ao VPN gere os certificados
+
+```sh
+cd ~/easy-rsa
+./easyrsa gen-req cliente1 nopass
+./easyrsa sign-req client cliente1
+```
+
+Além da criação desses certificados enviei os arquivos
+`a.crt`
+`cliente1.crt`
+`cliente1.key`
+`ta.key`
+para o cliente.
+
+Agora crie um arquivo de configuração para o cliente,o arquivo deve ter extensão .ovpn , lembrando de alterar IP_PUBLICO para o ip publico da sua instancia.
+
+```
+client
+dev tun
+proto udp
+remote IP_PUBLICO 1194
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+ca ca.crt
+cert cliente1.crt
+key cliente1.key
+tls-auth ta.key 1
+cipher AES-256-CBC
+auth SHA256
+verb 3
+```
+
+Após enviar os arquivos `a.crt`
+`cliente1.crt`
+`cliente1.key`
+`ta.key`
+`cliente1.ovpn`
+para o cliente, baixe a aplicação [OpenVPN](https://openvpn.net/community-downloads/) e use a configuração para conectar no VPN.
